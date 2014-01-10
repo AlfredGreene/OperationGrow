@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% set active_page = "moisture" %}
+{% block head %}
+    {{ super() }}
+		
+	<script type="text/javascript">
+
+	var plant={{ plant }};
+
+	var chart;
+	var options;
+	var currentMoisture = 0;
+
+	function OnPlantSelected(dropdown) {
+		var index = dropdown.selectedIndex;
+		plant = index;
+		window.location.href = "/graph/"+plant;
+		return false;
+	}
+
+	$(document).ready(function() {
+		
+		// Dialog for the user to confirm setting the new moisture level
+		$('#dialog-confirm').dialog({
+			autoOpen: false,
+			width: 320,
+			modal: true,
+			resizable: false,
+			buttons: {
+				"Set": function() {
+					$(this).dialog("close");
+					$('#dialog-wait').dialog('open');
+					$.get('setMoistureCurrent.php', {plant: plant, moisture: currentMoisture}, function(data) {
+						$('#dialog-wait').dialog('close');
+						$('#dialog-result').html(data);
+						$('#dialog-result').dialog('open');
+						setTimeout(function(data) {
+							$('#dialog-result').dialog('close')
+						}, 30000);
+					});
+					return true;
+				},
+				"Cancel": function() {
+					$(this).dialog("close");
+					return false;
+				}
+			}
+		});
+		
+		// Dialog to show waiting message
+		$('#dialog-wait').dialog({
+			autoOpen: false,
+			width: 320,
+			modal: true,
+			resizable: false
+		});
+		
+		// Dialog to show a result message
+		$('#dialog-result').dialog({
+			autoOpen: false,
+			width: 320,
+			modal: true,
+			resizable: false
+		});
+		
+		// Clicked get moisture button
+		$(".button").click(function() {
+			$('#dialog-wait').dialog('open');
+			
+			// Try to get moisture reading
+			var request = $.get('getCurrentMoisture.php', {plant: plant});
+
+			request.success(function(data) {
+				$('#dialog-wait').dialog('close');
+				currentMoisture = data;
+
+				$('#dialog-confirm').html('<p>Current moisture level is '+data+'.<br>Set this as the new dry level?</p>');
+				$('#dialog-confirm').dialog('option', 'anchor', $(this).attr('href'));
+				$('#dialog-confirm').dialog('open');
+				setTimeout(function(data) {
+					$('#dialog-confirm').dialog('close')
+					}, 60000);
+			});
+
+			request.error(function(data) {
+				$('#dialog-wait').dialog('close');
+				$('#dialog-result').html('An error occured.');
+				$('#dialog-result').dialog('open');
+				setTimeout(function(data) {
+					$('#dialog-result').dialog('close')
+					}, 30000);
+			});
+
+			return false;
+		});
+
+	Highcharts.setOptions({
+			global: {
+				useUTC: false
+			}
+		});
+
+		//Highcharts chart
+		options = {
+		chart: {
+			renderTo: 'container',
+			defaultSeriesType: 'line'
+		},
+		title: {
+			text: null
+		},
+		xAxis: {
+			type: 'datetime',
+			dateTimeLabelFormats: {
+				month: '%b',
+				year: '%Y',
+				day: '%b %e',
+				hour: '%l:%M%P'
+			}
+		},
+		yAxis: {
+			title: {
+				text: null
+			},
+			  min: 0,
+			  //max: 1024,
+			  endOnTick: false
+		},
+		tooltip: {
+			formatter: function() {
+				return dateFormat(new Date(this.x), "dddd h:MM TT") +', '+ this.y;
+			}
+		},
+		series: []
+		}
+
+		options.series.push([]);
+		// Create the chart
+		chart = new Highcharts.Chart(options);
+		
+		drawGraph();
+		
+		setTimeout(requestData, 60000);//1 minute
+	});
+			
+	function requestData() {
+		drawGraph();
+		setTimeout(requestData, 60000);//1 minute
+	}
+
+	function drawGraph() {
+		var series = {
+			data: []
+		};
+		
+		var jqxhr = $.get( "/moistureData/" + plant, function(data) {
+			series.data = JSON.parse(data);
+		
+			chart.series[0].setData(series.data, true);
+		})
+		.fail(function() {
+			$('#dialog-wait').dialog('close');
+			$('#dialog-result').html('An error occured.');
+			$('#dialog-result').dialog('open');
+			setTimeout(function(data) {
+				$('#dialog-result').dialog('close')
+				}, 30000);
+		});
+	}
+	</script>
+{% endblock %}
+
+{% block content %}
+
+	<div id="dialog-confirm" title="Update?">
+		<p>Error.</p>
+	</div>
+	
+	<div id="dialog-wait" title="Wait" width=400>
+		<img src="/static/activityIndicatorCircles.gif" alt=""/>  Please wait a moment.
+	</div>
+	
+	<div id="dialog-result" title="Result">
+		<p>Error.</p>
+	</div>
+	
+	<br>
+	
+	<div id="container" style="width: 640px; height: 300px; margin-left: auto; margin-right: auto;"></div>
+	
+	<div style="margin-top: 10px; text-align: center;">
+		<form>
+		<select name="plant_select" onchange='OnPlantSelected(this.form.plant_select);'>
+		{% for i in range(0,4) %}
+			{% if i == plant %}
+				<option value="{{ i }}" selected>{{ names[i][0] }}</option>
+			{% else %}
+				<option value="{{ i }}">{{ names[i][0] }}</option>
+			{% endif %}
+		{% endfor %}
+		</select>
+		
+		<input type="button" value="Set dry level" class="button" id="submit_btn"/>
+		</form>
+	</div>
+{% endblock %}

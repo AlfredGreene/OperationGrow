@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% set active_page = "log" %}
+{% block head %}
+    {{ super() }}
+	
+	<script type="text/javascript">
+		$(document).ready(function(){
+    			$('#log_area').scrollTop($('#log_area')[0].scrollHeight);
+		});
+	</script>
+{% endblock %}
+{% block content %}
+	<br>
+	<textarea id="log_area" style="width:520px; height:280px" readonly="readonly">{% for msg in messages %}{{ msg }}{% endfor %}</textarea>
+{% endblock %}

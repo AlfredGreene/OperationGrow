@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% set active_page = "configuration" %}
+{% block head %}
+    {{ super() }}
+
+	<script type="text/javascript">
+
+	$(document).ready(function() {
+
+	function checkInteger(param, min, max, msg) {
+		value = document.forms["configForm"][param].value;
+
+		if (!isNatNumber(value)) {
+			showResultDialog(msg+" is not a positive integer.");
+			document.forms["configForm"][param].focus();
+			return true;
+		} else if ( value < min || value > max) {
+			showResultDialog(msg+" must be between "+min+" and "+max+".");
+			document.forms["configForm"][param].focus();
+			return true;
+		}
+		
+		return false;
+	}
+
+	function checkString(param, max, msg) {
+		value = document.forms["configForm"][param].value;
+
+		if (value == "") {
+			showResultDialog(msg+" cannot be empty.");
+			document.forms["configForm"][param].focus();
+			return true;
+		} else if ( value.length > max) {
+			showResultDialog(msg+" can have no more than "+max+" characters.");
+			document.forms["configForm"][param].focus();
+			return true;
+		}
+		
+		return false;
+	}
+
+	function isNatNumber(string) {
+		var numericExpression = /^[0-9]+$/;
+		if(string.match(numericExpression)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	$(".button").click(function() {
+		
+		// validate and process form
+		
+		var name0 = document.forms["configForm"]["name0"].value;
+		var name1 = document.forms["configForm"]["name1"].value;
+		var name2 = document.forms["configForm"]["name2"].value;
+		var name3 = document.forms["configForm"]["name3"].value;
+		
+		//*** client-side input validation ***//
+		if((checkString("name0", 20, "First plant name "))
+		|| (checkString("name1", 20, "Second plant name "))
+		|| (checkString("name2", 20, "Third plant name "))
+		|| (checkString("name3", 20, "Fourth plant name "))
+		
+		|| (checkInteger("dry0", 1, 100000, name0+" water dry level"))
+		|| (checkInteger("dry1", 1, 100000, name1+" water dry level"))
+		|| (checkInteger("dry2", 1, 100000, name2+" water dry level"))
+		|| (checkInteger("dry3", 1, 100000, name3+" water dry level")))
+			// stop here and don't load
+			return false;
+		
+		$.ajax({
+			type: "POST",
+			url: "/setConfiguration",
+			data: $('#configForm').serialize(),
+			cache: false
+		}).done(function( msg ) {
+			showResultDialog('Configuration saved.');
+		}).fail(function(jqXHR, msg) {
+			showResultDialog('An error occurred.');
+		});
+		
+		// don't load
+		return false;
+	  });
+
+	$('#dialog-result').dialog({
+			autoOpen: false,
+			width: 320,
+			modal: true,
+			resizable: false
+		});
+
+	function showResultDialog(msg) {
+		$('#dialog-result').html(msg);
+		$('#dialog-result').dialog('open');
+		setTimeout(function(data) {
+			$('#dialog-result').dialog('close')
+			}, 30000);
+	};
+	});
+
+	</script>
+{% endblock %}
+
+{% block content %}
+
+	<div id="dialog-result" title="Result">
+		<p>Error.</p>
+	</div>
+		
+		<br>
+
+		<form id="configForm">
+			<table id="configTable" style="margin-left: auto; margin-right: auto;">
+				<thead>
+					<tr>
+						<th>Plant</th>
+						<th>Enabled</th>
+						<th>Dry</th>
+						<th>Index</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for row in configTable %}
+						<tr>
+							<td><input type="text" name={{ 'name%d' % row['plant'] }} value={{ row['name'] }} class="textField" /></td>
+							{% if row['enabled'] == 0 %}
+								<td><input type="checkbox" name={{ 'enabled%d' % row['plant'] }} /></td>
+							{% else %}
+								<td><input type="checkbox" name={{ 'enabled%d' % row['plant'] }} checked/></td>
+							{% endif %}
+							<td><input type="text" name={{ 'dry%d' % row['plant'] }} value={{ row['dry'] }} class="textField" /></td>
+							<td>{{ '%d' % row['plant'] }}</td>
+						</tr>
+					{% endfor %}
+					{% for i in range(configSize, 4) %}
+						<tr>
+							<td><input type="text" name={{ 'name%d' % i }} value={{ 'plant%d' % i}} class="textField" /></td>
+							<td><input type="checkbox" name={{ 'enabled%d' % i }}/></td>
+							<td><input type="text" name={{ 'dry%d' % i }} value="200" class="textField" /></td>
+							<td>{{ i }}</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+			
+			<br>
+
+			<div style="text-align: center;">
+				<input type="button" value="Save" class="button" id="submit_btn" style="margin-left: auto; margin-right: auto;"/>
+			</div>
+
+		</form>
+{% endblock %}

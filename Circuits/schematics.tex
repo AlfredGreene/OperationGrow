@@ -1,0 +1,112 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[siunitx]{circuitikz}
+\usepackage{mathtools}
+
+\begin{document}
+\setlength{\parskip}{10pt plus 1pt minus 1pt}
+
+
+\section{CapSense example circuit}
+
+This is the example circuit given for the CapacitanceSensor.h library.
+
+\begin{circuitikz} \draw
+(0,2) node[left]{Send} to[R=10<\mega\ohm>, o-] (4,2)
+      -- (4,0)
+      to[vC, l=$C_{sensed}$, *-o] (0,0) node[left]{Receive}
+(4,0) to[C=100<\pico\farad>] (8,0)
+(8,0) node[ground] {}
+;
+\end{circuitikz}
+
+
+\section{Soil moisture measurement circuit}
+
+This is a proposed circuit for measuring soil moisture. The RC time constant is primarily related to the combination of the 5 M$\Omega$ resistors and $C_{soil}$.
+
+\begin{equation}
+\tau = ( 5 M\Omega + 5 M\Omega ) ( C_{soil} )
+\end{equation}
+
+A 100 pF capacitor is connected to the receive side of the soil to stabilize the output.
+
+\begin{circuitikz} \draw
+(0,3) node[left]{Send} to[R=5<\mega\ohm>, o-] (4,3)
+      to[vC, l=$C_{soil}$] (4,0)
+      to[R=5<\mega\ohm>, *-o] (0,0) node[left]{Receive}
+(4,0) to[C=100<\pico\farad>] (8,0)
+(8,0) node[ground] {}
+;
+\end{circuitikz}
+
+Some experimentation should be done to determine ideal values for the resistors and whether the grounding capacitor is beneficial.
+
+
+\section{Watering circuit}
+
+This circuit opens a solenoid valve to water plants. Note that the transistors:
+\begin{itemize}
+\item Q1 is a phototransistor (which comprises half of an optoisolator)
+\item Q2 is a darlington transistor
+\end{itemize}
+
+Should the grounds be connected?
+
+\begin{circuitikz} \draw
+(-4, 4) node[left]{On} to[R, l=$R_1$, o-] (-1,4)
+-- (-1, 3) to[leDo] (-1,-1) node[ground] {}
+
+(1,1) node[npn] (npn) {Q1}
+(npn.base)
+(npn.emitter) -- (1, 0)
+(npn.collector) to[R, l=$R_2$] (1, 5) -- (3, 5)
+
+(3,0) node[npn] (npn) {Q2}
+(npn.base) -- (1, 0)
+(npn.emitter) node[ground] {}
+(npn.collector) to[L, -o] (3,6) node[above]{+12 V}
+
+(3, 1) -- (5, 1) to[Do] (5, 5) -- (3, 5)
+;
+\end{circuitikz}
+
+\begin{equation}
+I_B = \frac{I_L}{\beta} = \frac{500 mA}{1000} = 500 \mu A
+\end{equation}
+
+Is it correct that $V_{CE,Q1,sat}$ is 0 V?
+
+\begin{equation}
+R_{2} = \frac{ V_{R2} }{ I_{B2} } = \frac{ 12 V - V_{CE,Q1} - V_{BE,Q2} }{ I_{B2} } = \frac{ 12 V - 0 V - 1.4 V }{ 500 \mu A } = \frac{ 10.6 V }{ 500 \mu A } = 21.2 k\Omega
+\end{equation}
+
+\begin{equation}
+R_{1} = \frac{ V_{on} - V_{diode} }{ I_{diode} } = \frac{ 5 V - 2.7 V }{ I_{diode} }
+\end{equation}
+
+
+\section{Tank level sensor}
+
+This circuit detects the level of water in the reservoir.
+
+\begin{circuitikz}
+\draw
+(3,0) -- (3,4) to[closing switch, *-] (6,4) to[R, -o] (9,4) node[right]{L2}
+(3,0) -- (3,2) to[closing switch, *-] (6,2) to[R, -o] (9,2) node[right]{L1}
+(0,0) node[left]{On} to[R, o-] (3,0) to[closing switch, *-] (6,0) to[R, -o] (9,0) node[right]{L0}
+;
+\end{circuitikz}
+
+L0, L1, and L2 can be fed through a priority encoder to provide 4 water levels on 2 lines.
+
+\begin{tabular}{c{c}|c}
+  D0 & D1 & Water Level \\
+  \hline
+  0 & 0 & Empty \\
+  0 & 1 & Low \\
+  1 & 0 & Mid \\
+  1 & 1 & Full \\
+\end{tabular}
+
+\end{document}
