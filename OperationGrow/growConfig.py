@@ -3,7 +3,7 @@ import sqlite3
 TABLE_NAME = 'configuration'
 DATABASE_NAME = 'grow.db'
 
-class Configuration():
+class Configuration:
     conn = None
     c = None
 
@@ -16,6 +16,15 @@ class Configuration():
         self.c.execute(
             'INSERT OR REPLACE INTO configuration VALUES (%d, "%s", %d, %d)' %
             (plant, name, enabled, dry)
+            )
+        self.conn.commit()
+
+    def setDry(self, plant, dry):
+        self.c.execute(
+            '''UPDATE configuration
+               SET dry=%d
+               WHERE plant=%d''' %
+            (dry, plant)
             )
         self.conn.commit()
 

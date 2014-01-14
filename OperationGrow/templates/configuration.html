@@ -72,7 +72,7 @@
 		
 		$.ajax({
 			type: "POST",
-			url: "/setConfiguration",
+			url: "/configuration",
 			data: $('#configForm').serialize(),
 			cache: false
 		}).done(function( msg ) {
@@ -123,6 +123,7 @@
 					</tr>
 				</thead>
 				<tbody>
+					<!-- Rows in config table -->
 					{% for row in configTable %}
 						<tr>
 							<td><input type="text" name={{ 'name%d' % row['plant'] }} value={{ row['name'] }} class="textField" /></td>
@@ -135,7 +136,9 @@
 							<td>{{ '%d' % row['plant'] }}</td>
 						</tr>
 					{% endfor %}
-					{% for i in range(configSize, 4) %}
+					
+					<!-- Remaining rows -->
+					{% for i in range(configSize, NUM_PLANTS) %}
 						<tr>
 							<td><input type="text" name={{ 'name%d' % i }} value={{ 'plant%d' % i}} class="textField" /></td>
 							<td><input type="checkbox" name={{ 'enabled%d' % i }}/></td>

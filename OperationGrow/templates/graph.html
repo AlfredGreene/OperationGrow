@@ -30,7 +30,7 @@
 				"Set": function() {
 					$(this).dialog("close");
 					$('#dialog-wait').dialog('open');
-					$.get('setMoistureCurrent.php', {plant: plant, moisture: currentMoisture}, function(data) {
+					$.post('/dryLevel/' + plant, {moisture: currentMoisture}, function(data) {
 						$('#dialog-wait').dialog('close');
 						$('#dialog-result').html(data);
 						$('#dialog-result').dialog('open');
@@ -68,7 +68,7 @@
 			$('#dialog-wait').dialog('open');
 			
 			// Try to get moisture reading
-			var request = $.get('getCurrentMoisture.php', {plant: plant});
+			var request = $.get('/currentMoisture/' + plant);
 
 			request.success(function(data) {
 				$('#dialog-wait').dialog('close');
@@ -191,7 +191,7 @@
 	<div style="margin-top: 10px; text-align: center;">
 		<form>
 		<select name="plant_select" onchange='OnPlantSelected(this.form.plant_select);'>
-		{% for i in range(0,4) %}
+		{% for i in range(len(names)) %}
 			{% if i == plant %}
 				<option value="{{ i }}" selected>{{ names[i][0] }}</option>
 			{% else %}

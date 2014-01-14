@@ -1,44 +1,44 @@
 #!c:/Python27/python.exe -u
 
 from flask import Flask, render_template, request
-import growMoisture, growConfig, growLogger
+import growMoisture, growConfig, growLogger, growCommon, growServer
 app = Flask(__name__)
 
 @app.route("/")
 def dashboard():
     return "Dashboard"
 
-@app.route("/log")
+@app.route("/log", methods=['GET'])
 def log():
     f = file(growLogger.filename, 'r')
     messages = f.readlines()
     return render_template('log.html', messages=messages)
 
-@app.route("/graph/<int:plant>")
-def graph(plant):
+@app.route("/moisture/<int:plant>", methods=['GET'])
+def moisture(plant):
     c = growConfig.Configuration()
     names = c.getNames()
     
     return render_template('graph.html', plant=plant, names=names)
 
 @app.route("/currentMoisture/<int:plant>", methods=['GET'])
-def getCurrentMoisture(plant):
+def currentMoisture(plant):
     return '%d' % 233
 
 @app.route("/moistureData/<int:plant>", methods=['GET'])
-def getMoistureData(plant):
+def moistureData(plant):
     m = growMoisture.Moisture(plant)
     return '%s' % m.read()
 
 @app.route("/dryLevel/<int:plant>", methods=['POST'])
 def dryLevel(plant):
-    return 'Success'
+    return 'Success' + request.form['moisture']
 
-@app.route("/setConfiguration", methods=['POST'])
+@app.route("/configuration", methods=['POST'])
 def setConfiguration():
     c = growConfig.Configuration()
     
-    for i in range(0,4):
+    for i in range(0,growCommon.NUM_PLANTS):
         if ('enabled%d' % i) in request.form:
             enabled = 1
         else:
@@ -54,7 +54,7 @@ def setConfiguration():
     return '', 200
 
 @app.route("/configuration", methods=['POST', 'GET'])
-def configurationPage():
+def getConfiguration():
     c = growConfig.Configuration()
     
     if request.method == 'POST':
@@ -70,7 +70,8 @@ def configurationPage():
     else:
         configTable = c.read()
         
-        return render_template('configuration.html', configTable = configTable, configSize = len(configTable))
+        return render_template('configuration.html', configTable = configTable, configSize = len(configTable), NUM_PLANTS = growCommon.NUM_PLANTS)
 
 if __name__ == "__main__":
+    growServer.init()
     app.run(host='0.0.0.0', debug=True)
